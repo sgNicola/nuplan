@@ -1,12 +1,14 @@
 group: ${oc.env:NUPLAN_EXP_ROOT}/exp               # This is where results, logs, config, etc. are saved
 experiment_name: simulation                                # Experiment name, by default 'simulation' or 'training'
-job_name: open_loop_boxes                                       #"closed_loop_nonreactive_agents closed_loop_reactive_agents open_loop_boxes"  
+job_name: closed_loop_nonreactive_agents  #open_loop_boxes  
 split: test_all
-planner: planTF
-date: 2024.12.27.15.26.39
+planner: gameformerPlanner #planTF
 experiment_uid: ${split}/${planner}              # Unique Id of the experiment, default to timestamp
 experiment: ${experiment_name}/${job_name}/${experiment_uid}      # Unique name of the experiment
-output_dir: ${group}/${experiment}                  # Output directory to save all training artifacts
+runner_report_dir: ${group}/${experiment}                  # Output directory to save all training artifacts
 metric_dir: metrics                                 # Metric dir name to save metric results.
 aggregator_metric_dir: aggregator_metric            # Aggregator metric dir name to save aggregated metrics.
-metrics: exp/exp/simulation/open_loop_boxes/test_all/planTF/metrics/planner_expert_average_heading_error_within_bound.parquet          # Name of the parquet file the RunnerReport will be stored to
+runner_report_file: runner_report.parquet           # Name of the parquet file the RunnerReport will be stored to
+runner_columns: ['scenario_type', 'scenario_name', 'log_name', 'risk_score']
+metric_columns: ['scenario_name', 'metric_score']
+post_score: 'risk_score'

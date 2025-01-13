@@ -3,6 +3,7 @@ import pandas as pd
 import hydra
 from hydra.utils import instantiate
 from omegaconf import DictConfig, OmegaConf
+
 class ReportProcessor:
     def __init__(self,cfg:DictConfig):
         """
@@ -62,24 +63,4 @@ class ReportProcessor:
 
                     # Merge with runner_df on scenario_name
                     runner_df = pd.merge(runner_df, df_metric, on='scenario_name', how='left')
-
         return runner_df
-
-
-
-if __name__ == "__main__":
-# Initialize the ReportProcessor class
-    CONFIG_PATH = 'config'
-    CONFIG_NAME = 'runner_report'
-    hydra.core.global_hydra.GlobalHydra.instance().clear()
-    hydra.initialize(config_path=CONFIG_PATH)
-    cfg = hydra.compose(config_name=CONFIG_NAME)
-    processor = ReportProcessor(
-        cfg
-    )
-
-    # Read and merge all data
-    result_df = processor.read_metric_reports()
-
-    # View the result
-    print(result_df.iloc[0])
