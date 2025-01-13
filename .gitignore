@@ -164,3 +164,4 @@ checkpoints/
 .pth
 dataset/*
 exp/*
+figures/*
