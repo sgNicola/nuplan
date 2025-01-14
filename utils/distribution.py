@@ -4,8 +4,8 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import seaborn as sns
 import yaml
-from typing import Generator, Tuple, Dict
 import pandas as pd
+from typing import Generator, List, Optional, Set, Tuple, Type, Union, Dict
 
 def execute_many(query: str, params: Tuple, db_file: str):
     """
@@ -38,6 +38,39 @@ def get_db_scenario_info(log_file: str) -> Generator[Tuple[str, int], None, None
 
     for row in execute_many(query, (), log_file):
         yield (row["type"], row["cnt"])
+
+def get_lidarpc_tokens_with_scenario_tag_from_db(log_file: str) -> Generator[Tuple[str, str], None, None]:
+    """
+    Get the LidarPc tokens that are tagged with a scenario from the DB, sorted by scenario_type in ascending order.
+    :param log_file: The log file to query.
+    :return: A generator of (scenario_tag, token) tuples where `token` is tagged with `scenario_tag`
+    """
+    query = """
+    SELECT  st.type,
+            lp.token
+    FROM lidar_pc AS lp
+    LEFT OUTER JOIN scenario_tag AS st
+        ON lp.token=st.lidar_pc_token
+    WHERE st.type IS NOT NULL
+    ORDER BY st.type ASC NULLS LAST;
+    """
+
+    for row in execute_many(query, (), log_file):
+        yield (str(row["type"]), row["token"].hex())
+
+def get_scenario_type_token_map(db_files: List[str]) -> Dict[str, List[Tuple[str, str]]]:
+    """
+    Get a map from scenario types to lists of all instances for a given scenario type in the database.
+    :param db_files: db files to search for available scenario types.
+    :return: dictionary mapping scenario type to list of db/token pairs of that type.
+    """
+    available_scenario_types = defaultdict(list)
+    for db_file in db_files:
+        for tag, token in get_lidarpc_tokens_with_scenario_tag_from_db(db_file):
+            available_scenario_types[tag].append((db_file, token))
+
+    return available_scenario_types
+
 
 def aggregate_scenario_counts(db_dir: str) -> Dict[str, int]:
     """
@@ -129,8 +162,8 @@ def total_count(data):
 
 if __name__ == "__main__":
     # Use NUPLAN_DATA_ROOT environment variable
-    # db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/trainval")
-    db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/test")
+    db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/trainval")
+    # db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/test")
     # Aggregate scenario counts across all `.db` files
     total_scenario_counts = aggregate_scenario_counts(db_directory)
 
@@ -141,5 +174,5 @@ if __name__ == "__main__":
 
     print(f"\nTotal Scenario Count: {total_count(total_scenario_counts)}")
     # Save to YAML
-    output_yaml_path = "test_scenario_counts.yaml"
+    output_yaml_path = "train_scenario_counts.yaml"
     save_to_yaml(total_scenario_counts, output_yaml_path)

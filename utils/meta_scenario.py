@@ -57,14 +57,14 @@ def count_scenario_types(
 # Example usage
 if __name__ == "__main__":
     # Path to the input CSV file
-    file_path = "/home/sgwang/nuplan/exp/InD/metadata/InD_metadata_node_0.csv"  # Replace with your actual file path
-
+    # file_path = "/home/sgwang/nuplan/exp/InD/metadata/InD_metadata_node_0.csv"  # Replace with your actual file path
+    file_path = "/home/sgwang/nuplan/exp/cache_pdm_open/metadata/cache_pdm_open_metadata_node_0.csv"
     # Call the function
     try:
         scenario_counts = count_scenario_types(
             file_path=file_path,
             column_name="file_name",  # Column containing the file paths
-            output_file="scenario_type_counts.csv",  # Output file path (optional)
+            output_file="open_scenario_type_counts.csv",  # Output file path (optional)
             scenario_type_index=7,  # Index of scenario_type in the file path
             delimiter="/"  # Delimiter used in file paths
         )
