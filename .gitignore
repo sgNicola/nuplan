@@ -165,3 +165,4 @@ checkpoints/
 dataset/*
 exp/*
 figures/*
+encoder_features_epoch_*/

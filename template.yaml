@@ -4,7 +4,7 @@ _convert_: 'all'
 scenario_types: null                # List of scenario types to include
 scenario_tokens: null               # List of scenario tokens to include
 
-log_names: null                     # Filter scenarios by log names
+log_names: ${splitter.log_splits.train}                     # Filter scenarios by log names
 map_names: null                     # Filter scenarios by map names
 
 num_scenarios_per_type: null        # Number of scenarios per type
