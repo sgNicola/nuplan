@@ -72,7 +72,7 @@ if __name__ == "__main__":
     configloader = LoadYamlConfig('InD.yaml')
     scenario_filter_types = configloader.get_scenario_type()
     # Example usage:
-    cache = CacheCount('exp/cache_pdm_open')
+    cache = CacheCount('exp/InD_train')
     scenario_type_counts = cache.get_scenario_type_counts()
     miss_cache=diff_scenario_types(scenario_filter_types, scenario_type_counts)
     resample_scenarios = get_resample_scenarios(scenario_type_counts)

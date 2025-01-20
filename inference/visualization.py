@@ -52,7 +52,7 @@ class DataVisualization:
         plt.title('Scenario Distribution')
         plt.xlabel('Score')
         plt.ylabel('Density')
-        plt.legend()
+        plt.legend(fontsize=14)
         plt.show()
 
     def draw_risk(self, df: pd.DataFrame, score: str) -> None:
@@ -85,9 +85,9 @@ class DataVisualization:
         if self.grid:
             plt.grid(True)
         plt.title('Risk Score Distribution')
-        plt.xlabel('Risk Score')
+        plt.xlabel('Performance Score')
         plt.ylabel('Density')
-        plt.legend()
+        plt.legend(fontsize=14)
         plt.show()
 
     def draw_performance(self, df: pd.DataFrame, score: str) -> None:
@@ -122,5 +122,5 @@ class DataVisualization:
         plt.title('Performance Score vs. Distribution')
         plt.xlabel('Performance')
         plt.ylabel('Density')
-        plt.legend()
+        plt.legend(fontsize=14)
         plt.show()

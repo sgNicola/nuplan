@@ -1,19 +1,7 @@
 _target_: nuplan.planning.scenario_builder.scenario_filter.ScenarioFilter
 _convert_: 'all'
 
-scenario_types:                     # List of scenario types to include
-- stopping_at_traffic_light_without_lead
-- on_all_way_stop_intersection
-- following_lane_with_slow_lead
-- starting_protected_noncross_turn
-- waiting_for_pedestrian_to_cross
-- near_pedestrian_on_crosswalk_with_ego
-- accelerating_at_traffic_light
-- behind_long_vehicle
-- stopping_with_lead
-- following_lane_with_lead
-- near_multiple_pedestrians
-- near_construction_zone_sign
+scenario_types: []                  # List of scenario types to include
 scenario_tokens:                    # List of scenario tokens to include
 
 log_names: ${splitter.log_splits.train}                     # Filter scenarios by log names
