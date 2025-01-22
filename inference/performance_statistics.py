@@ -1,4 +1,5 @@
 import pandas as pd
+import yaml
 def load_scenario_types(yaml_file):
     with open(yaml_file, 'r') as file:
         data = yaml.safe_load(file)

@@ -33,21 +33,16 @@ def get_ego_features(features):
         ego_features.append(feature)
     return ego_features
 
+   
+
 def main():
     plantf_path = os.getenv('PLANTF')
     scenario_path = os.path.join(plantf_path, 'encoder_features')
     scenarios =load_scenario_features(scenario_path)
     first_scenario = scenarios[0]
-    print(first_scenario)
-    print(first_scenario.values())
     scenario = list(first_scenario.values())[0]
     array_features = get_array_features(scenario)
-    print(array_features[0].shape)
     ego_features = get_ego_features(array_features)
-    print(ego_features[0].shape)
-    print(len(ego_features))
-    
-    
-    
+
 if __name__ == '__main__':
     main()

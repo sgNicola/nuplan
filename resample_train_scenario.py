@@ -6,17 +6,17 @@ from ruamel.yaml import YAML
 from typing import Any, Dict, List, Optional, Tuple
 from utils.loadyamlconfig import LoadYamlConfig
 from utils.cachecount import CacheCount
-
+import argparse
 
 def diff_scenario_types(scenario_filter_types, scenario_type_counts):
     cache_scenario_types = scenario_type_counts.keys()  # 获取 scenario_type_counts 的场景类型
     in_filter_not_in_cache = set(scenario_filter_types) - set(cache_scenario_types)
     in_cache_not_in_filter = set(cache_scenario_types) - set(scenario_filter_types)
     
-    print("Scenario types in scenario_filter but not in CSV:")
+    print("Scenario types in scenario_filter but not in cache:")
     print(in_filter_not_in_cache)
     
-    print("\nScenario types in CSV but not in scenario_filter:")
+    print("\nScenario types in cache but not in scenario_filter:")
     print(in_cache_not_in_filter)
     
     return in_filter_not_in_cache
@@ -34,8 +34,6 @@ def get_resample_scenarios(scenario_type_counts):
     print(scenario_dict)
     
     return scenario_dict
-
-from ruamel.yaml import YAML
 
 def generate_scenario_filter_yaml(filtered_scenarios, template_path, output_path):
     """
@@ -69,11 +67,24 @@ def generate_scenario_filter_yaml(filtered_scenarios, template_path, output_path
     print(f"YAML file successfully generated at: {output_path}")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Process planner type and generate resample scenarios.")
+    parser.add_argument("--planner", type=str, default='planTF',  # Default to 'planTF' if not provided
+                        help="Specify the planner type (e.g., planTF or Gameformer)."
+    )
+    args = parser.parse_args()
+    
     configloader = LoadYamlConfig('InD.yaml')
     scenario_filter_types = configloader.get_scenario_type()
     # Example usage:
-    cache = CacheCount('exp/InD_train')
-    scenario_type_counts = cache.get_scenario_type_counts()
+    # Determine the cache path and method based on the planner
+    if args.planner == "planTF":
+        cache = CacheCount('exp/InD_train')
+        scenario_type_counts = cache.get_scenario_type_counts()
+    elif args.planner == "Gameformer":
+        cache = CacheCount('exp/gameInD/train')
+        scenario_type_counts = cache.extract_and_count_scenario_types()
+    else:
+        raise ValueError(f"Unsupported planner type: {args.planner}")
     miss_cache=diff_scenario_types(scenario_filter_types, scenario_type_counts)
     resample_scenarios = get_resample_scenarios(scenario_type_counts)
     for scenario in miss_cache:

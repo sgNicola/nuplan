@@ -45,3 +45,23 @@ class CacheCount:
                         scenario_type_counts[scenario_type] += token_count
         return scenario_type_counts
     
+    def extract_and_count_scenario_types(self):
+        # Dictionary to count occurrences of each scenario_type
+        scenario_counts = defaultdict(int)
+        # Iterate through all files in the directory
+        for file_name in os.listdir(self.cache_dir):
+            # Check if the file ends with .npz
+            if file_name.endswith(".npz"):
+                try:
+                    # Extract scenario_type from the filename
+                    # Split from the right to isolate scenario_type
+                    parts = file_name.split("_", 5)  # Split into two parts from the left
+                    if len(parts) == 6:
+                        scenario_type = parts[5].split(".")[0]  # Take everything before .npz
+                        # Count the scenario_type
+                        scenario_counts[scenario_type] += 1
+                except Exception as e:
+                    print(f"Error processing file '{file_name}': {e}")
+                    continue
+
+        return scenario_counts

@@ -6,6 +6,8 @@ import seaborn as sns
 import yaml
 import pandas as pd
 from typing import Generator, List, Optional, Set, Tuple, Type, Union, Dict
+from ruamel.yaml import YAML
+from math import ceil
 
 def execute_many(query: str, params: Tuple, db_file: str):
     """
@@ -84,7 +86,6 @@ def aggregate_scenario_counts(db_dir: str) -> Dict[str, int]:
     for db_file in os.listdir(db_dir):
         if db_file.endswith(".db"):  # Ensure we only process `.db` files
             db_path = os.path.join(db_dir, db_file)
-            print(f"Processing {db_path}...")
 
             # Get scenario counts for the current database
             for scenario_type, count in get_db_scenario_info(db_path):
@@ -160,10 +161,122 @@ def total_count(data):
     """
     return sum(data.values())
 
+def categorize_scenarios_by_count(scenario_counts: Dict[str, int]) -> Dict[str, List[str]]:
+    """
+    Categorize scenarios into four categories based on their counts.
+    Categories:
+    - "0-500": Scenarios with counts between 0 and 500 (inclusive).
+    - "500-1000": Scenarios with counts between 501 and 1000 (inclusive).
+    - "1000-2000": Scenarios with counts between 1001 and 2000 (inclusive).
+    - "2000+": Scenarios with counts greater than 2000.
+
+    :param scenario_counts: A dictionary with scenario types as keys and their total counts as values.
+    :return: A dictionary with categories as keys and lists of scenario types as values.
+    """
+    # Initialize the categories
+    categorized_scenarios = {
+        "A": [],
+        "B": [],
+        "C": [],
+        "D": [],
+        "E": []
+    }
+    # Iterate through the scenario counts and categorize them
+    for scenario_type, count in scenario_counts.items():
+        if 0 <= count <= 500:
+            categorized_scenarios["A"].append(scenario_type)
+        elif 501 <= count <= 1000:
+            categorized_scenarios["B"].append(scenario_type)
+        elif 1001 <= count <= 10000:
+            categorized_scenarios["C"].append(scenario_type)
+        elif 10001 <= count <= 50000:
+            categorized_scenarios["D"].append(scenario_type)
+        else:  # count > 2000
+            categorized_scenarios["E"].append(scenario_type)
+    return categorized_scenarios
+
+def evenly_split_scenarios(scenarios: List[str], num_groups: int) -> List[List[str]]:
+    """
+    Evenly split a list of scenarios into a specified number of groups.
+
+    :param scenarios: A list of scenario tokens to be split.
+    :param num_groups: The number of groups to split into.
+    :return: A list of lists, each containing an even subset of scenarios.
+    """
+    group_size = ceil(len(scenarios) / num_groups)
+    return [scenarios[i:i + group_size] for i in range(0, len(scenarios), group_size)]
+
+def generate_scenario_filter_yaml(filtered_scenarios: List[str], template_path: str, output_path: str):
+    """
+    Generates a scenario_filter config YAML file with filtered scenarios written under `scenario_types`,
+    while preserving the original format, including null fields, indentation, empty lines, and field order.
+
+    :param filtered_scenarios: A list of scenario types (tokens) to include in the YAML file.
+    :param template_path: Path to the template YAML file.
+    :param output_path: Path to save the generated YAML file.
+    """
+    # Initialize ruamel.yaml
+    yaml = YAML()
+    yaml.preserve_quotes = True  # Preserve quotes and formatting
+
+    # Load the template YAML file
+    with open(template_path, 'r', encoding='utf-8') as template_file:
+        scenario_filter_config = yaml.load(template_file)
+
+    # Update the `scenario_types` field in the config
+    scenario_filter_config['scenario_types'] = filtered_scenarios
+
+    # Write the updated YAML back to the output file
+    with open(output_path, 'w', encoding='utf-8') as output_file:
+        yaml.dump(scenario_filter_config, output_file)
+
+    print(f"YAML file successfully generated at: {output_path}")
+    
+def process_and_generate_yaml_files(
+    scenario_counts: Dict[str, int],
+    template_path: str,
+    output_dir: str
+):
+    """
+    Categorize scenarios into groups, generate YAML files for Group A,
+    and split the combined groups (B, C, D, E) into four evenly distributed YAML files.
+
+    :param scenario_counts: A dictionary with scenario types as keys and their total counts as values.
+    :param template_path: Path to the template YAML file.
+    :param output_dir: Directory to save the generated YAML files.
+    """
+    # Categorize scenarios
+    categorized_scenarios = categorize_scenarios_by_count(scenario_counts)
+
+    # 1. Generate YAML file for Group A
+    group_a = categorized_scenarios["A"]
+    if group_a:  # Only generate if Group A is not empty
+        output_path_a = os.path.join(output_dir, "scenario_filter_group_A.yaml")
+        generate_scenario_filter_yaml(group_a, template_path, output_path_a)
+        print(f"Generated YAML for Group A with {len(group_a)} scenarios.")
+
+    # 2. Combine groups B, C, D, and E into a single list
+    combined_scenarios = (
+        categorized_scenarios["B"] +
+        categorized_scenarios["C"] +
+        categorized_scenarios["D"] +
+        categorized_scenarios["E"]
+    )
+
+    # 3. Evenly split the combined scenarios into 4 groups
+    scenario_groups = evenly_split_scenarios(combined_scenarios, 4)
+
+    # 4. Generate YAML files for each of the 4 groups
+    for idx, group in enumerate(scenario_groups):
+        if group:  # Only generate if the group is not empty
+            output_path = os.path.join(output_dir, f"scenario_filter_group_{idx + 1}.yaml")
+            generate_scenario_filter_yaml(group, template_path, output_path)
+            print(f"Generated YAML for Group {idx + 1} with {len(group)} scenarios.")
+
 if __name__ == "__main__":
     # Use NUPLAN_DATA_ROOT environment variable
-    db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/trainval")
-    # db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/test")
+    # db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/trainval")
+    db_directory = os.path.join(os.environ["NUPLAN_DATA_ROOT"], "nuplan-v1.1/test")
     # Aggregate scenario counts across all `.db` files
     total_scenario_counts = aggregate_scenario_counts(db_directory)
 
@@ -176,3 +289,6 @@ if __name__ == "__main__":
     # Save to YAML
     output_yaml_path = "train_scenario_counts.yaml"
     save_to_yaml(total_scenario_counts, output_yaml_path)
+    template_path = "/home/sgwang/nuplan/template.yaml"
+    output_dir = "/home/sgwang/nuplan/scenario_filter"
+    process_and_generate_yaml_files(total_scenario_counts, template_path, output_dir)

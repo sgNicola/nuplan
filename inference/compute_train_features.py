@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 from sklearn.mixture import GaussianMixture
 from compute_test_features import load_scenario_features, get_array_features, get_ego_features
+from scipy.spatial import distance
+from sklearn.preprocessing import StandardScaler
 os.environ['PLANTF'] = '/home/sgwang/planTF'
 class EncoderFeatureAnalyzer:
     def __init__(self, dim):
@@ -98,13 +100,24 @@ class EncoderFeatureAnalyzer:
         gmm.fit(features)
         return gmm
     
-    def calculate_mahalanobis_distance(self,features, new_sample):
+    def calculate_matrix_feature(self, features):
+        print("NaN in features:", np.isnan(features).any())
+        print("Inf in features:", np.isinf(features).any())
         mean = np.mean(features, axis=0)
         cov_matrix = np.cov(features, rowvar=False)
+        regularization = 1e-6
+        cov_matrix += np.eye(cov_matrix.shape[0]) * regularization
         inv_cov_matrix = np.linalg.inv(cov_matrix)
+        print("NaN in cov_matrix:", np.isnan(cov_matrix).any())
+        print("NaN in inv_cov_matrix:", np.isnan(inv_cov_matrix).any())
+        return mean, cov_matrix, inv_cov_matrix
+
+    def calculate_mahalanobis_distance(self,new_sample,mean,inv_cov_matrix):
+        print("NaN in new_sample:", np.isnan(new_sample).any())
+        print("Inf in new_sample:", np.isinf(new_sample).any())
+        new_sample = new_sample.flatten()
         mahalanobis_dist = distance.mahalanobis(new_sample, mean, inv_cov_matrix)
         return mahalanobis_dist
-    
     
 def main():
     dim = 128
@@ -117,14 +130,21 @@ def main():
     
     scenario_path = os.path.join(plantf_path, 'encoder_features')
     scenarios =load_scenario_features(scenario_path)
-    first_scenario = scenarios[0]
+    first_scenario = scenarios[2]
     scenario = list(first_scenario.values())[0]
     array_features = get_array_features(scenario)
     ego_features = get_ego_features(array_features)
     
-    for ego_feature in ego_features:
-        dist = analyzer.calculate_mahalanobis_distance(concatenated_features, ego_feature)
-        print(dist)
-        
+    scaler = StandardScaler()
+    features_normalized = scaler.fit_transform(concatenated_features.numpy())
+    mean, cov_matrix, inv_cov_matrix = analyzer.calculate_matrix_feature(features_normalized)
+    for ego_feature in ego_features[:1]:
+        ego_feature = scaler.transform(ego_feature.reshape(1, -1)).flatten()
+        diff =ego_feature - mean
+        print("NaN in diff:", np.isnan(diff).any())
+        m = np.dot(np.dot(diff, inv_cov_matrix), diff.T)  # Quadratic form
+        print("Value of m:", m)
+        # dist = analyzer.calculate_mahalanobis_distance(ego_feature, mean, inv_cov_matrix)
+        # print(f'Mahalanobis Distance: {dist}')
 if __name__ == '__main__':
     main()
